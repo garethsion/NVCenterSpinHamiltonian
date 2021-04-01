@@ -188,8 +188,9 @@ class NVSpinHamiltonian(SpinHamiltonian):
 
             if len(self.B) == 1:
                 Hzee = self.get_zeeman(self.B, self.Btheta, self.Bz)
-            else if len(self.B) > 1:
-                print("Length of B is greater thann 1. Haven't fixed this bit yet")
+            elif len(self.B) > 1:
+                ## I'll actually probbably remove this bbit. And maybe the getters and setters
+                print("Length of B is greater than 1. Haven't fixed this bit yet")
                 # Hzee = self.get_zeeman(self.B, self.Btheta, self.Bz)
         else:
             Hzee = 0
@@ -199,13 +200,55 @@ class NVSpinHamiltonian(SpinHamiltonian):
             self.Ez = 0 if not self.Ez else self.Ez
             if len(self.E) == 1:
                 Helec = self.get_electronic(self.E, self.Etheta, self.Ez)
-            else if len(self.E) > 1:
+            elif len(self.E) > 1:
                 print("Length of B is greater than 1. Haven't fixed this bit yet")
         else:
             Helec = 0
 
         Hzf = self.zero_field
         print(Hzf + Hzee + Helec)
+
+    def get_transition_frequencies(self):
+        """ Make this method private """
+        if self.B is not None:
+            self.Btheta = 0 if not self.Bz else self.Btheta
+            self.Bz = 0 if not self.Bz else self.Bz
+
+            if len(self.B) == 1:
+                Hzee = self.get_zeeman(self.B, self.Btheta, self.Bz)
+            elif len(self.B) > 1:
+                ## I'll actually probbably remove this bbit. And maybe the getters and setters
+                print("Length of B is greater than 1. Haven't fixed this bit yet")
+                # Hzee = self.get_zeeman(self.B, self.Btheta, self.Bz)
+        else:
+            Hzee = 0
+
+        if self.E is not None:
+            self.Etheta = 0 if not self.Ez else self.Etheta
+            self.Ez = 0 if not self.Ez else self.Ez
+            if len(self.E) == 1:
+                Helec = self.get_electronic(self.E, self.Etheta, self.Ez)
+            elif len(self.E) > 1:
+                print("Length of B is greater than 1. Haven't fixed this bit yet")
+        else:
+            Helec = 0
+
+        H = self.zero_field + Hzee + Helec 
+        egvals = H.eigenstates()[0]
+
+        # NNeed to work out what to do about this part 
+        # if(B == 0): self.ms0 = egvals[0] 
+
+        f1 = egvals[2] - self.ms0 if(self.Bz) else egvals[2]-egvals[0] # to distinguish parallel and perpendiculr energies as qutip sorts them
+        f0 = abs(egvals[1] + egvals[0] - (2*self.ms0)) if(z) else egvals[1]-egvals[0] # absolute value of frequency
+
+        return np.array([f1,f0])
+
+    def transition_frequencies(self):
+        """ Need to generalize this for all  fields """
+        ham = np.vectorize(self.get_transition_frequencies, otypes=[np.ndarray])
+        trans_freqs = np.array(ham())
+        return np.array(trans_freqs.tolist())
 
     ### Getter and setter decorator methods
     @property
