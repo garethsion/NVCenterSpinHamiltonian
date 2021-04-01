@@ -38,7 +38,7 @@ class ZeemanSpinHamiltonian(SpinHamiltonian):
         Hzee = self.ge*(Bz*self.sz + Bx*self.sx + By*self.sy)
         return Hzee
 
-    def transition_frequencies(self, B, theta, z ):
+    def transition_frequencies(self, B, theta, z):
         H = self.zero_field + self.interaction(B,theta,z)
         estates = H.eigenstates()
         egvals = estates[0]
@@ -89,13 +89,17 @@ class HyperfineSpinHamiltonian(SpinHamiltonian):
         self.comp4 = self.Axz*(qt.tensor(self.sx,self.Iz)+qt.tensor(self.sz,self.Ix))
         self.Hhf = self.comp1 + self.comp2 + self.comp3 + self.comp4
 
-    def eigenvalues(self,Bz):
-        H = self.D*(qt.tensor(self.sz*self.sz,qt.qeye(3))-(2/3)*qt.tensor(qt.qeye(3),qt.qeye(3))) + self.ge*Bz*qt.tensor(self.sz,qt.qeye(3)) + self.gc*Bz*qt.tensor(qt.qeye(3),self.Iz) + self.Hhf  
-        return H.eigenstates()[0]
+    def interaction(self,Bz):
+        H = self.gc*Bz*qt.tensor(qt.qeye(3),self.Iz) + self.Hhf  
+        return H.eigenstates()
 
-    def transitionFreqs(self,Bz):
-        #eigen = np.vectorize(self.eigenvalues)
-        egvals = self.eigenvalues(Bz)
+    def interaction_with_field(self,Bz):
+        """ CHANGE THIS TO CALL OTHER CLASSES """
+        H = self.D*(qt.tensor(self.sz*self.sz,qt.qeye(3))-(2/3)*qt.tensor(qt.qeye(3),qt.qeye(3))) + self.ge*Bz*qt.tensor(self.sz,qt.qeye(3)) + self.interaction(Bz)
+        return H
+
+    def transition_freqs(self,Bz):
+        egvals = self.interaction_with_field(Bz)[0]
         ms0 = (egvals[0] + egvals[1] + egvals[2])/3		# energy of 0 level averaged for simpler graph
         return np.array([egvals[3]-ms0, egvals[4]-ms0, egvals[5]-ms0, egvals[6]-ms0, egvals[7]-ms0, egvals[8]-ms0])
 
@@ -106,7 +110,6 @@ class ElectronicSpinHamiltonian(SpinHamiltonian):
         self.dpar = 0.03
         self.dperp = 0.17
         
-    
     def interaction(self,E, theta, z):# z is a flag to distinguish between parallel and perpendicular
         Ex = E*math.cos(theta)		# calculating B from its magnitude, polar angle.
         Ey = E*math.sin(theta)
@@ -119,11 +122,11 @@ class ElectronicSpinHamiltonian(SpinHamiltonian):
         Hes = (self.dpar * (Ez*self.sz**2) -  
                self.dperp * (Ex*(self.sx**2-self.sy**2)) +  
                self.dpar * (Ey*(self.sx*self.sy + self.sy*self.sx)) )
-        Hes = self.zero_field + Hes
-        return Hes.eigenstates()
+        return Hes
 
     def transition_freqs(self,E, theta, z):
-        egvals = self.interaction(E,theta,z)[0]
+        Hes = self.zero_field + self.interaction(E, theta, z)
+        egvals = Hes.eigenstates()[0]
 
         if(E == 0): self.ms0 = egvals[0] 
         f1 = egvals[2] - self.ms0 if(z) else egvals[2]-egvals[0] # to distinguish parallel and perpendiculr energies as qutip sorts them
@@ -132,7 +135,8 @@ class ElectronicSpinHamiltonian(SpinHamiltonian):
         return np.array([f1,f0])
 
     def spin_projection(self,E, theta, z):
-        egst = self.interaction(E, theta, z)
+        Hes = self.zero_field + self.interaction(E, theta, z)
+        egst = Hes.eigenstates()[0]
 
         msx0 = qt.expect(self.sx,egst[1][0])   # spin projection of 0th spin eigenstate of Hs on x axis
         msy0 = qt.expect(self.sy,egst[1][0])   # spin projection of 0th spin eigenstate of Hs on y axis
@@ -148,3 +152,106 @@ class ElectronicSpinHamiltonian(SpinHamiltonian):
 
         return np.array([msx0,msy0,msz0,msx1,msy1,msz1,msx2,msy2,msz2])
 
+class NVSpinHamiltonian(SpinHamiltonian):
+    """ Complete Spin Hamiltonina for the NV center """
+    def __init__(self):
+        SpinHamiltonian.__init__(self)
+        self.zeeman = ZeemanSpinHamiltonian()
+        self.electronic = ElectronicSpinHamiltonian()
+        self.hyperfine = HyperfineSpinHamiltonian()
+
+        self.B = None
+        self.Btheta = None
+        self.Bz = None
+
+        self.E = None
+        self.Etheta = None
+        self.Ez = None
+    
+    def __call__(self):
+        print("NVSpinHamiltonian called. Make sure to set necessary input parameters")
+        return 
+
+    def get_zeeman(self, B, theta, z):
+        """ NEEDS TO BE VECTORIZED TO WORK """
+        return self.zeeman.interaction(B, theta, z)
+
+    def get_electronic(self, E, theta, z):
+        return self.electronic.interaction(E, theta, z)
+
+    def spin_hamiltonian(self):
+        """ CHANGE THIS FOR GETTER SETTER METHODS """
+
+        if self.B is not None:
+            self.Btheta = 0 if not self.Bz else self.Btheta
+            self.Bz = 0 if not self.Bz else self.Bz
+
+            if len(self.B) == 1:
+                Hzee = self.get_zeeman(self.B, self.Btheta, self.Bz)
+            else if len(self.B) > 1:
+                print("Length of B is greater thann 1. Haven't fixed this bit yet")
+                # Hzee = self.get_zeeman(self.B, self.Btheta, self.Bz)
+        else:
+            Hzee = 0
+            
+        if self.E is not None:
+            self.Etheta = 0 if not self.Ez else self.Etheta
+            self.Ez = 0 if not self.Ez else self.Ez
+            if len(self.E) == 1:
+                Helec = self.get_electronic(self.E, self.Etheta, self.Ez)
+            else if len(self.E) > 1:
+                print("Length of B is greater than 1. Haven't fixed this bit yet")
+        else:
+            Helec = 0
+
+        Hzf = self.zero_field
+        print(Hzf + Hzee + Helec)
+
+    ### Getter and setter decorator methods
+    @property
+    def B(self):
+        return self._B
+
+    @B.setter
+    def B(self, B):
+        self._B = B
+    
+    @property
+    def Btheta(self):
+        return self._Btheta
+
+    @Btheta.setter
+    def Btheta(self, Btheta):
+        self._Btheta = Btheta
+
+    @property
+    def Bz(self):
+        return self._Bz
+
+    @Btheta.setter
+    def Bz(self, Bz):
+        self._Bz = Bz
+    
+    @property
+    def E(self):
+        return self._E
+
+    @E.setter
+    def E(self, E):
+        self._E = E
+
+    @property
+    def Etheta(self):
+        return self._Etheta
+
+    @Etheta.setter
+    def Etheta(self, Etheta):
+        self._Etheta = Etheta
+
+    @property
+    def Ez(self):
+        return self._Ez
+
+    @Ez.setter
+    def Ez(self, Ez):
+        self._Ez = Ez
