@@ -1,0 +1,37 @@
+{
+  "build": "py38h63973fd_0",
+  "build_number": 0,
+  "channel": "https://repo.anaconda.com/pkgs/main/osx-64",
+  "constrains": [],
+  "depends": [
+    "blas * openblas",
+    "libopenblas >=0.3.3,<1.0a0",
+    "numpy-base 1.19.2 py38h68fea81_0",
+    "python >=3.8,<3.9.0a0"
+  ],
+  "extracted_package_dir": "/Users/garethjones/opt/anaconda3/pkgs/numpy-1.19.2-py38h63973fd_0",
+  "features": "",
+  "files": [],
+  "fn": "numpy-1.19.2-py38h63973fd_0.conda",
+  "legacy_bz2_md5": "2d331dbf40485487f58ba400226bb86e",
+  "license": "BSD 3-Clause",
+  "link": {
+    "source": "/Users/garethjones/opt/anaconda3/pkgs/numpy-1.19.2-py38h63973fd_0",
+    "type": 1
+  },
+  "md5": "5698d4fd4c28fe00f40914cd3940c574",
+  "name": "numpy",
+  "package_tarball_full_path": "/Users/garethjones/opt/anaconda3/pkgs/numpy-1.19.2-py38h63973fd_0.conda",
+  "paths_data": {
+    "paths": [],
+    "paths_version": 1
+  },
+  "requested_spec": "None",
+  "sha256": "ce47ce07f9693b82f1886e0519ab32694c855666121856318b5e37a983eda002",
+  "size": 21952,
+  "subdir": "osx-64",
+  "timestamp": 1603558502110,
+  "track_features": "",
+  "url": "https://repo.anaconda.com/pkgs/main/osx-64/numpy-1.19.2-py38h63973fd_0.conda",
+  "version": "1.19.2"
+}
