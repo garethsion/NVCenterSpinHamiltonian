@@ -160,13 +160,15 @@ class NVSpinHamiltonian(SpinHamiltonian):
         self.electronic = ElectronicSpinHamiltonian()
         self.hyperfine = HyperfineSpinHamiltonian()
 
-        self.B = None
-        self.Btheta = None
-        self.Bz = None
+        # self.B = None
+        # self.Btheta = None
+        # self.Bz = None
 
         self.E = None
         self.Etheta = None
         self.Ez = None
+
+        self.ms0 = 0
     
     def __call__(self):
         print("NVSpinHamiltonian called. Make sure to set necessary input parameters")
@@ -208,93 +210,101 @@ class NVSpinHamiltonian(SpinHamiltonian):
         Hzf = self.zero_field
         print(Hzf + Hzee + Helec)
 
-    def get_transition_frequencies(self):
-        """ Make this method private """
-        if self.B is not None:
-            self.Btheta = 0 if not self.Bz else self.Btheta
-            self.Bz = 0 if not self.Bz else self.Bz
+    def _get_transition_frequencies(self, B, Btheta, Bz):
+        """ 'Private' """
+        # if self.B is not None:
+        #     self.Btheta = 0 if not self.Bz else self.Btheta
+        #     self.Bz = 0 if not self.Bz else self.Bz
 
-            if len(self.B) == 1:
-                Hzee = self.get_zeeman(self.B, self.Btheta, self.Bz)
-            elif len(self.B) > 1:
-                ## I'll actually probbably remove this bbit. And maybe the getters and setters
-                print("Length of B is greater than 1. Haven't fixed this bit yet")
-                # Hzee = self.get_zeeman(self.B, self.Btheta, self.Bz)
-        else:
-            Hzee = 0
+        #     if len(self.B) == 1:
+        #         Hzee = self.get_zeeman(self.B, self.Btheta, self.Bz)
+        #     elif len(self.B) > 1:
+        #         ## I'll actually probbably remove this bbit. And maybe the getters and setters
+        #         print("Length of B is greater than 1. Haven't fixed this bit yet")
+        #         # Hzee = self.get_zeeman(self.B, self.Btheta, self.Bz)
+        # else:
+        #     Hzee = 0
 
-        if self.E is not None:
-            self.Etheta = 0 if not self.Ez else self.Etheta
-            self.Ez = 0 if not self.Ez else self.Ez
-            if len(self.E) == 1:
-                Helec = self.get_electronic(self.E, self.Etheta, self.Ez)
-            elif len(self.E) > 1:
-                print("Length of B is greater than 1. Haven't fixed this bit yet")
-        else:
-            Helec = 0
+        # if self.E is not None:
+        #     self.Etheta = 0 if not self.Ez else self.Etheta
+        #     self.Ez = 0 if not self.Ez else self.Ez
+        #     if len(self.E) == 1:
+        #         Helec = self.get_electronic(self.E, self.Etheta, self.Ez)
+        #     elif len(self.E) > 1:
+        #         print("Length of B is greater than 1. Haven't fixed this bit yet")
+        # else:
+        #     Helec = 0
 
-        H = self.zero_field + Hzee + Helec 
+        Btheta = Btheta
+        Bz = Bz
+
+        Hzee = self.get_zeeman(B, Btheta, Bz)
+        Helec = 0
+
+        # H = self.zero_field + Hzee + Helec 
+        H = self.zero_field + Hzee
         egvals = H.eigenstates()[0]
 
         # NNeed to work out what to do about this part 
-        # if(B == 0): self.ms0 = egvals[0] 
+        if(B == 0): self.ms0 = egvals[0] 
 
-        f1 = egvals[2] - self.ms0 if(self.Bz) else egvals[2]-egvals[0] # to distinguish parallel and perpendiculr energies as qutip sorts them
-        f0 = abs(egvals[1] + egvals[0] - (2*self.ms0)) if(z) else egvals[1]-egvals[0] # absolute value of frequency
+        f1 = egvals[2] - self.ms0 if(Bz) else egvals[2]-egvals[0] # to distinguish parallel and perpendiculr energies as qutip sorts them
+        f0 = abs(egvals[1] + egvals[0] - (2*self.ms0)) if(Bz) else egvals[1]-egvals[0] # absolute value of frequency
 
         return np.array([f1,f0])
 
-    def transition_frequencies(self):
+    def transition_frequencies(self,B, Btheta, Bz):
         """ Need to generalize this for all  fields """
-        ham = np.vectorize(self.get_transition_frequencies, otypes=[np.ndarray])
-        trans_freqs = np.array(ham())
+        ham = np.vectorize(self._get_transition_frequencies, otypes=[np.ndarray])
+        # ham = np.vectorize(self.zeeman.transition_frequencies, otypes=[np.ndarray])
+        trans_freqs = np.array(ham(B, Btheta, Bz))
         return np.array(trans_freqs.tolist())
 
-    ### Getter and setter decorator methods
-    @property
-    def B(self):
-        return self._B
+    # ### Getter and setter decorator methods
+    # @property
+    # def B(self):
+    #     return self._B
 
-    @B.setter
-    def B(self, B):
-        self._B = B
+    # @B.setter
+    # def B(self, B):
+    #     self._B = B
     
-    @property
-    def Btheta(self):
-        return self._Btheta
+    # @property
+    # def Btheta(self):
+    #     return self._Btheta
 
-    @Btheta.setter
-    def Btheta(self, Btheta):
-        self._Btheta = Btheta
+    # @Btheta.setter
+    # def Btheta(self, Btheta):
+    #     self._Btheta = Btheta
 
-    @property
-    def Bz(self):
-        return self._Bz
+    # @property
+    # def Bz(self):
+    #     return self._Bz
 
-    @Btheta.setter
-    def Bz(self, Bz):
-        self._Bz = Bz
+    # @Btheta.setter
+    # def Bz(self, Bz):
+    #     self._Bz = Bz
     
-    @property
-    def E(self):
-        return self._E
+    # @property
+    # def E(self):
+    #     return self._E
 
-    @E.setter
-    def E(self, E):
-        self._E = E
+    # @E.setter
+    # def E(self, E):
+    #     self._E = E
 
-    @property
-    def Etheta(self):
-        return self._Etheta
+    # @property
+    # def Etheta(self):
+    #     return self._Etheta
 
-    @Etheta.setter
-    def Etheta(self, Etheta):
-        self._Etheta = Etheta
+    # @Etheta.setter
+    # def Etheta(self, Etheta):
+    #     self._Etheta = Etheta
 
-    @property
-    def Ez(self):
-        return self._Ez
+    # @property
+    # def Ez(self):
+    #     return self._Ez
 
-    @Ez.setter
-    def Ez(self, Ez):
-        self._Ez = Ez
+    # @Ez.setter
+    # def Ez(self, Ez):
+    #     self._Ez = Ez
